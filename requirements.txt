@@ -1,5 +1,4 @@
-# Installed at the start of Phase 1 — nothing needed for Phase 0 (reading + CSV work).
-# pypdf                  # PDF -> text extraction
-# numpy                  # vectors + cosine similarity
-# sentence-transformers  # local embeddings (pulls in torch, ~2GB — that's normal)
-# anthropic              # Claude API (generation step)
+pypdf                  # PDF -> text extraction
+numpy                  # vectors + cosine similarity
+sentence-transformers  # local embeddings (BAAI/bge-small-en-v1.5)
+anthropic              # Claude API (generation step, claude-haiku-4-5)

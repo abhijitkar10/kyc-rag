@@ -54,3 +54,19 @@ for the README and interviews.
    run all experiments personally, rehearse with mock questions.
 
 **Phase 0: complete.** Next: Phase 1 walking skeleton (extract → chunk → embed → search → answer).
+
+## 2026-07-20 — Day 1 (continued): Phase 1 walking skeleton + baseline
+
+11. **Built the six-script pipeline** (`src/`): extract.py (pypdf, page-tagged text),
+    chunk.py (naive 800/200 windows, 431 chunks), embed.py (bge-small, 384-dim, ~6s),
+    search.py (hand-written cosine: one dot product + argsort), answer.py (Haiku 4.5,
+    cite-or-refuse system prompt), ask.py (CLI). Plus eval/baseline_retrieval.py
+    (page-match grading against questions.csv).
+12. **Baseline established: recall@5 = 0.71** (12/17 answerable). Misses concentrated in
+    paraphrase questions and the amendment-footnote question — the exact weaknesses
+    Phase 3 experiments (BM25, hybrid, clause chunking, rerank) are designed to attack.
+    Key finding: trick-question scores overlap answerable scores → no clean refusal
+    threshold exists yet at baseline.
+
+**Phase 1: complete** (generation path pending an ANTHROPIC_API_KEY for live test).
+Next: Phase 2 (formalize eval harness) then Phase 3 experiments.

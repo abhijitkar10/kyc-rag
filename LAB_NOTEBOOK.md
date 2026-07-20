@@ -35,3 +35,10 @@ Changed: filled questions.csv with all 20 rows (6 direct, 6 paraphrased, 3 numer
 Expected: paraphrased rows (7-12) should be the hardest for keyword-only retrieval; trick rows (18-20) should tempt a naive system.
 Result: v1 ground truth in place. Independent verification pass = onboarding Step 2.
 Lesson: retention rules have TWO different clocks (transaction date vs relationship end) — exactly the subtlety that makes a good eval question.
+
+## 2026-07-20 — Phase 1: walking skeleton + BASELINE
+Changed: built the full pipeline (extract 107pp -> 431 naive 800-char chunks -> bge-small-en-v1.5 embeddings -> hand-written cosine top-5 -> Haiku answer w/ strict cite-or-refuse prompt). Ran retrieval-only baseline over all 20 eval questions.
+Expected: mediocre recall; paraphrase questions worst.
+Result: **recall@5 = 12/17 = 0.71 (BASELINE, exp 0)**. Misses: Q2 (Para 16 reqs), Q3 (V-CIP scope), Q8 (driving licence paraphrase), Q11 (DigiLocker paraphrase), Q17 (amendment footnote). Trick best-scores 0.573/0.702/0.677 vs answerable best-scores 0.655–0.835 → ranges OVERLAP, so a naive refusal threshold can't cleanly separate yet (threshold 0.71 would wrongly refuse Q7 & Q11).
+Lesson: 2 of 5 misses are paraphrase rows as predicted; and cosine scores from bge-small are bunched (0.57–0.84) — separating real from trick questions needs better retrieval (Phase 3) before a threshold (Phase 4) can work.
+Note: answer.py/ask.py written but untested — no ANTHROPIC_API_KEY on this machine yet.
