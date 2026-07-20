@@ -29,3 +29,9 @@ Changed: added BUILD_TIMELINE.md (milestone history, honest AI-attribution note)
 Expected: worksheet reduces question-writing from ~3 evenings of open reading to ~2 focused hours of targeted clause reading.
 Result: Phase 0 remaining work = complete questions.csv from the worksheet.
 Lesson: keep eval ground truth human-verified even when AI designs the question stems.
+
+## 2026-07-20 — Eval set v1 complete (20 questions)
+Changed: filled questions.csv with all 20 rows (6 direct, 6 paraphrased, 3 numeric, 2 amendment-aware, 3 trick). Answers verified against PDF pages 7-14, 24-27, 38-52 during writing.
+Expected: paraphrased rows (7-12) should be the hardest for keyword-only retrieval; trick rows (18-20) should tempt a naive system.
+Result: v1 ground truth in place. Independent verification pass = onboarding Step 2.
+Lesson: retention rules have TWO different clocks (transaction date vs relationship end) — exactly the subtlety that makes a good eval question.

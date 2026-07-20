@@ -39,3 +39,18 @@ for the README and interviews.
 
 **Next milestone:** complete `questions.csv` from the worksheet → Phase 0 done → Phase 1
 (walking skeleton: extract → chunk → embed → search → answer).
+
+## 2026-07-20 — Day 1 (continued): eval set completed, project handoff clarified
+
+8. **Clarified who this is for**: the project is being built for a friend (the interview
+   candidate). Division of labor updated — AI/user complete the build; the friend follows
+   `FRIEND_ONBOARDING.md` to verify, internalize, and own it.
+9. **Completed the 20-question eval set** (`eval/questions.csv`): every answer written
+   against the PDF after reading the relevant pages (definitions p.7–14, CDD p.24–27,
+   ongoing DD/EDD/records/reporting p.38–52). All clause refs carry page numbers.
+   Verification pass by the project owner is Step 2 of onboarding — that re-establishes
+   human-verified ground truth and doubles as the domain reading.
+10. **Wrote `FRIEND_ONBOARDING.md`**: the make-it-yours path — understand, verify, self-test,
+   run all experiments personally, rehearse with mock questions.
+
+**Phase 0: complete.** Next: Phase 1 walking skeleton (extract → chunk → embed → search → answer).
