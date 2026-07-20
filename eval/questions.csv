@@ -1,0 +1,3 @@
+id,question,answer_in_own_words,source_doc,clause_ref,answerable
+1,"Which documents count as Officially Valid Documents (OVDs) for individual KYC?","Passport, driving licence, proof of possession of Aadhaar, Voter ID, NREGA job card, NPR letter (verify exact list while reading)","kyc-master-direction","Section 3(a) definitions — confirm exact clause","yes"
+2,"What are the best tax-saving options under Section 80C?","Not in this corpus — income tax, not KYC. System must refuse.","","","no"
