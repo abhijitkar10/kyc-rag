@@ -25,5 +25,12 @@ LAB_NOTEBOOK.md   experiment log
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt   # from Phase 1 onward
+pip install -r requirements.txt
+
+# LLM key for the answer step (retrieval works without it).
+# Free Gemini key: https://aistudio.google.com/apikey
+echo 'GEMINI_API_KEY=your-key-here' > .env    # .env is gitignored
 ```
+
+The generator picks Gemini if a Gemini key is present, else Claude — see `src/llm.py`.
+

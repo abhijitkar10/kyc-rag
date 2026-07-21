@@ -1,18 +1,14 @@
-"""Step 5: the writer — Claude answers ONLY from retrieved chunks, with citations.
+"""Step 5: the writer — the LLM answers ONLY from retrieved chunks, with citations.
 
-Model: claude-haiku-4-5 ($1/$5 per MTok — a query costs a fraction of a paisa).
-Needs ANTHROPIC_API_KEY in the environment.
+Provider is chosen automatically (Gemini free tier, else Claude) — see llm.py.
 """
 
 import sys
 from pathlib import Path
 
-import anthropic
-
 sys.path.insert(0, str(Path(__file__).parent))
 from search import search  # noqa: E402
-
-MODEL = "claude-haiku-4-5"
+import llm  # noqa: E402
 
 SYSTEM = """You are a compliance assistant for the RBI KYC Master Direction.
 Answer ONLY from the excerpts provided by the user. For every claim, cite the
@@ -27,14 +23,7 @@ def answer(question: str, top_k: int = 5) -> str:
         f"[Excerpt {i+1} — KYC Master Direction, p.{c['page']}]\n{c['text']}"
         for i, (_, c) in enumerate(hits)
     )
-    client = anthropic.Anthropic()
-    resp = client.messages.create(
-        model=MODEL,
-        max_tokens=1024,
-        system=SYSTEM,
-        messages=[{"role": "user", "content": f"{excerpts}\n\nQUESTION: {question}"}],
-    )
-    return "".join(b.text for b in resp.content if b.type == "text")
+    return llm.complete(SYSTEM, f"{excerpts}\n\nQUESTION: {question}")
 
 
 if __name__ == "__main__":

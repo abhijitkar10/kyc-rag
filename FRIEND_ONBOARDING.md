@@ -39,6 +39,19 @@ limits and the one-year rule? How often is KYC updated for high/medium/low risk?
 are records kept, from when? Who can V-CIP be used for? What's a PEP and what extra steps
 apply? — If you can answer these cold, you're safe on domain questions.
 
+### Getting an LLM key (free)
+
+The answer step needs a language model. Get a **free Gemini key** at
+https://aistudio.google.com/apikey (Google login, "Create API key", copy it),
+then in the repo folder run — substituting your key:
+
+```bash
+echo 'GEMINI_API_KEY=paste-your-key-here' > .env
+```
+
+`.env` is gitignored, so the key never leaves your machine. Test it:
+`python src/ask.py "Can I open an account over a video call?" --show-chunks`
+
 ## Step 4 — Own the build (Phases 1–5)
 
 From Phase 1 onward, **you run everything yourself**: type the commands, run each

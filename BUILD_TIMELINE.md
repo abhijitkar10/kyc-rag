@@ -70,3 +70,13 @@ for the README and interviews.
 
 **Phase 1: complete** (generation path pending an ANTHROPIC_API_KEY for live test).
 Next: Phase 2 (formalize eval harness) then Phase 3 experiments.
+
+## 2026-07-20 — Day 1 (continued): LLM made provider-flexible (Gemini free tier)
+
+13. **Switched the generator to Gemini's free tier** (Claude kept as fallback) to avoid
+    needing a payment card. Refactored the generator into `src/llm.py` — a single
+    `complete()` interface that auto-selects provider by which API key is present, with a
+    dependency-free `.env` loader. `answer.py` now calls it; retrieval is untouched.
+    Added `eval/generation_smoke.py` (answerable -> must cite a page; trick -> must refuse).
+    Phase 5's model comparison is now Gemini-vs-Claude.
+    Blocked on generation testing only by key creation (Google login = owner's step).

@@ -42,3 +42,9 @@ Expected: mediocre recall; paraphrase questions worst.
 Result: **recall@5 = 12/17 = 0.71 (BASELINE, exp 0)**. Misses: Q2 (Para 16 reqs), Q3 (V-CIP scope), Q8 (driving licence paraphrase), Q11 (DigiLocker paraphrase), Q17 (amendment footnote). Trick best-scores 0.573/0.702/0.677 vs answerable best-scores 0.655–0.835 → ranges OVERLAP, so a naive refusal threshold can't cleanly separate yet (threshold 0.71 would wrongly refuse Q7 & Q11).
 Lesson: 2 of 5 misses are paraphrase rows as predicted; and cosine scores from bge-small are bunched (0.57–0.84) — separating real from trick questions needs better retrieval (Phase 3) before a threshold (Phase 4) can work.
 Note: answer.py/ask.py written but untested — no ANTHROPIC_API_KEY on this machine yet.
+
+## 2026-07-20 — Provider-flexible LLM (Gemini free tier, Claude fallback)
+Changed: added src/llm.py — one complete(system,user) interface that auto-selects Gemini (GEMINI_API_KEY, free tier) or Claude (ANTHROPIC_API_KEY), plus a dependency-free .env loader. Rewired answer.py through it. Added eval/generation_smoke.py (checks answerable->cites a page, trick->refuses). Installed google-genai.
+Expected: switching provider changes nothing upstream (retrieval untouched) — the generator is a commodity behind an interface.
+Result: imports + no-key error path verified. Generation NOT yet run end-to-end — waiting on a free Gemini key in .env (key creation needs a Google login, done by the project owner).
+Lesson: making the generator vendor-swappable is a clean architecture point AND unblocks a free provider for a student — cost and design win at once.
