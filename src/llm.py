@@ -15,7 +15,9 @@ architecture doesn't depend on any single vendor.
 import os
 from pathlib import Path
 
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+# gemini-2.0-flash now has ZERO free-tier quota (Google moved the free tier
+# to the 2.5 family) -- 2.5-flash is the current free-tier workhorse.
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5")
 
 
@@ -67,6 +69,10 @@ def _gemini(system: str, user: str, max_tokens: int, model: str) -> str:
             system_instruction=system,
             max_output_tokens=max_tokens,
             temperature=0,
+            # 2.5 models spend "thinking" tokens out of max_output_tokens,
+            # which truncates short answers; RAG answers are grounded in the
+            # provided context, so buy the full budget back.
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
         ),
     )
     return resp.text or ""
