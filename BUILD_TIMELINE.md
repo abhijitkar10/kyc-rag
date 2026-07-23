@@ -92,3 +92,20 @@ Next: Phase 2 (formalize eval harness) then Phase 3 experiments.
     Surfaced the recurring "right page, wrong chunk" weakness of naive chunking (Phase 3
     target) and fixed a real bug in the smoke test's refusal detector. 3/4 behavioural
     checks pass; the one fail is a genuine retrieval miss.
+
+## 2026-07-23 — Day 2: Phase 2 eval harness + 50-question set
+
+15. **Expanded the eval set 20 -> 50 questions** (44 answerable / 6 trick) for whole-document
+    coverage — read PDF pages 15-37 to write and verify Q21-47 across Customer Acceptance,
+    Risk Management, CIP, Small Accounts, entity CDD (sole-prop/company/partnership/trust),
+    V-CIP infrastructure/procedure, and periodic-updation mechanics; 3 new trick questions.
+16. **Built the unified eval harness** `eval/run_eval.py` — one command → one scorecard
+    (recall@1, recall@5, answerable/trick score separation; `--gen` adds behavioural checks:
+    cited / grounded / false-refusal / trick-refusal). Per-question outputs saved for manual
+    faithfulness spot-checks. Added `EXPERIMENTS.md` living table.
+17. **Retrieval re-baseline on v2: recall@1 = 0.61, recall@5 = 0.82** (36/44). Key read:
+    recall@1 << recall@5 → the answer chunk is usually retrieved but rarely rank-1, so a
+    reranker is the highest-leverage Phase-3 fix. Separation still overlaps.
+18. **Hardened the harness against free-tier rate limits** — the first background generation
+    run died on a transient 429 after one question and lost all progress; added retry with
+    exponential backoff, per-answer flush-to-disk, and `--resume`.
