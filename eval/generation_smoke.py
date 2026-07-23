@@ -33,7 +33,10 @@ def main() -> None:
     passed = 0
     for q, should_refuse in CASES:
         out = answer(q).strip()
-        refused = REFUSAL.lower() in out.lower()
+        # A refusal is a LEADING refusal line. The phrase can also appear mid-answer
+        # when the model honestly flags one unsupported sub-point of an otherwise
+        # answered question — that is a partial answer, not a refusal.
+        refused = out.lower().startswith(REFUSAL.lower())
         cited = bool(CITE.search(out))
         ok = refused if should_refuse else (cited and not refused)
         passed += ok

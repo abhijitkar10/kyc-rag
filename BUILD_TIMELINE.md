@@ -80,3 +80,15 @@ Next: Phase 2 (formalize eval harness) then Phase 3 experiments.
     Added `eval/generation_smoke.py` (answerable -> must cite a page; trick -> must refuse).
     Phase 5's model comparison is now Gemini-vs-Claude.
     Blocked on generation testing only by key creation (Google login = owner's step).
+
+## 2026-07-20 — Day 1 (continued): first end-to-end generation run (Gemini free tier)
+
+14. **Ran the full pipeline live on Gemini 2.5-flash (free tier)** and investigated every
+    non-pass rather than trusting the labels. Confirmed the generator is faithful — under a
+    question where the retrieved context held tempting-but-wrong "one lakh" figures (Small
+    Accounts, other account types) it declined to use them and honestly flagged the one
+    unsupported sub-point. Also observed free-tier non-determinism (one earlier run
+    hallucinated a fabricated page cite) — motivating a Phase 4 citation-verification check.
+    Surfaced the recurring "right page, wrong chunk" weakness of naive chunking (Phase 3
+    target) and fixed a real bug in the smoke test's refusal detector. 3/4 behavioural
+    checks pass; the one fail is a genuine retrieval miss.

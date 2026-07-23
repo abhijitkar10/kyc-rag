@@ -48,3 +48,15 @@ Changed: added src/llm.py — one complete(system,user) interface that auto-sele
 Expected: switching provider changes nothing upstream (retrieval untouched) — the generator is a commodity behind an interface.
 Result: imports + no-key error path verified. Generation NOT yet run end-to-end — waiting on a free Gemini key in .env (key creation needs a Google login, done by the project owner).
 Lesson: making the generator vendor-swappable is a clean architecture point AND unblocks a free provider for a student — cost and design win at once.
+
+## 2026-07-20 — First end-to-end generation run (Gemini 2.5-flash free tier)
+Changed: ran the full pipeline (retrieval -> Gemini) on 4 representative questions; investigated every non-pass instead of accepting the labels.
+Expected: answerable -> cited answer; trick -> refuse.
+Result: after fixing a smoke-test bug, **3/4 behavioural checks pass**. Findings:
+  1. Generation works on the free tier; citations render in the exact required format [KYC Master Direction, p.N].
+  2. FAITHFULNESS CONFIRMED under adversarial retrieval: for the 3-limits question, the retrieved context contained tempting-but-WRONG "one lakh" figures (Small Accounts p.32; another account type p.34) but NOT the OTP e-KYC balance cap (para 17iii, p.26). The model gave the 2 supported limits with citations and honestly said the 3rd was "not found" — it refused to grab the wrong number. The strict-grounding prompt works.
+  3. NON-DETERMINISM: an earlier run hallucinated that 3rd limit with a fabricated "p.26" cite; later runs (deterministic 3x) correctly refused it. Gemini free tier isn't fully deterministic even at temperature=0 -> motivates a Phase 4 citation-verification post-check (assert cited page is in the retrieved set).
+  4. RECURRING STRUCTURAL ISSUE: right PAGE retrieved != answer-bearing CHUNK retrieved (seen on both the video-call Q and the balance-cap Q). Naive 800-char chunking splits a clause (e.g. para 18 heading) from its body -> Phase 3 clause-aware chunking + hybrid. Also means page-level recall@5 is OPTIMISTIC; chunk/phrase-level grading would be stricter.
+  5. Video-call question fails end-to-end: retrieval returns V-CIP *conditions* (p.30/33) not the "V-CIP may be used for onboarding" opening (para 18, p.27) -> correct refusal, real recall gap.
+Fixed: smoke-test refusal detector was a substring match (flagged partial answers containing the phrase mid-text as full refusals); changed to startswith so a leading refusal counts, a mid-answer "not found for sub-point" does not.
+Lesson: separating retrieval-eval from generation-eval paid off immediately — it let me tell "retrieval missed" apart from "generator refused" apart from "generator hallucinated," three different fixes. The most reassuring result is the model declining a plausible wrong number.
