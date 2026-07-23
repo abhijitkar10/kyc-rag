@@ -47,11 +47,27 @@ def expected_pages(clause_ref: str) -> set[int]:
     return pages
 
 
+def answer_with_retry(answer_fn, question: str, top_k: int, tries: int = 4) -> str:
+    """The Gemini free tier throws transient 429s. One shouldn't kill an 8-min
+    run, so retry with exponential backoff; on final failure return a sentinel
+    the caller records but doesn't score."""
+    for attempt in range(tries):
+        try:
+            return answer_fn(question, top_k=top_k).strip()
+        except Exception as e:  # noqa: BLE001 - free-tier errors are opaque
+            if attempt == tries - 1:
+                return f"__ERROR__ {type(e).__name__}: {e}"
+            time.sleep(10 * (2 ** attempt))  # 10s, 20s, 40s
+    return "__ERROR__ unreachable"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--gen", action="store_true", help="also run generation checks")
     ap.add_argument("--top-k", type=int, default=5)
     ap.add_argument("--tag", default="run")
+    ap.add_argument("--resume", action="store_true",
+                    help="skip questions already in eval/results/<tag>.jsonl")
     args = ap.parse_args()
 
     rows = list(csv.DictReader(QUESTIONS.open()))
@@ -99,30 +115,53 @@ def main() -> None:
         print(f"\n== generation ({name} {model}, {GEN_SLEEP_S}s pacing) ==")
         RESULTS_DIR.mkdir(exist_ok=True)
         out_path = RESULTS_DIR / f"{args.tag}.jsonl"
-        cited = grounded = false_ref = refused = 0
-        with out_path.open("w") as f:
-            for i, row in enumerate(rows):
-                out = answer(row["question"], top_k=args.top_k).strip()
-                lead_refusal = out.lower().startswith(REFUSAL.lower())
-                cite_pages = {int(p) for p in CITE.findall(out)}
+
+        done_ids: set[str] = set()
+        if args.resume and out_path.exists():
+            done_ids = {json.loads(l)["id"] for l in out_path.open()}
+            print(f"resuming: {len(done_ids)} already done, skipping them")
+
+        todo = [r for r in rows if r["id"] not in done_ids]
+        mode = "a" if args.resume else "w"
+        with out_path.open(mode) as f:
+            for i, row in enumerate(todo):
+                out = answer_with_retry(answer, row["question"], args.top_k)
+                errored = out.startswith("__ERROR__")
+                lead_refusal = (not errored) and out.lower().startswith(REFUSAL.lower())
+                cite_pages = set() if errored else {int(p) for p in CITE.findall(out)}
                 got_pages = {c["page"] for _, c in retrieved[row["id"]]}
                 rec = {"id": row["id"], "question": row["question"], "answer": out,
-                       "lead_refusal": lead_refusal, "cited_pages": sorted(cite_pages),
-                       "retrieved_pages": sorted(got_pages)}
+                       "errored": errored, "lead_refusal": lead_refusal,
+                       "cited_pages": sorted(cite_pages), "retrieved_pages": sorted(got_pages)}
                 f.write(json.dumps(rec) + "\n")
-                if row["answerable"] == "yes":
-                    if lead_refusal:
-                        false_ref += 1
-                    else:
-                        cited += bool(cite_pages)
-                        grounded += bool(cite_pages) and cite_pages <= got_pages
-                else:
-                    refused += lead_refusal
-                if i < len(rows) - 1:
+                f.flush()  # survive a crash: keep every completed answer on disk
+                if i < len(todo) - 1:
                     time.sleep(GEN_SLEEP_S)
+
+        # Aggregate from the file so --resume runs score the full set.
+        allrecs = {json.loads(l)["id"]: json.loads(l) for l in out_path.open()}
+        cited = grounded = false_ref = refused = errored_n = 0
+        for row in rows:
+            r = allrecs.get(row["id"])
+            if r is None:
+                continue
+            if r.get("errored"):
+                errored_n += 1
+                continue
+            cp, gp = set(r["cited_pages"]), set(r["retrieved_pages"])
+            if row["answerable"] == "yes":
+                if r["lead_refusal"]:
+                    false_ref += 1
+                else:
+                    cited += bool(cp)
+                    grounded += bool(cp) and cp <= gp
+            else:
+                refused += r["lead_refusal"]
 
         print(f"answerable ({n}): cited={cited}  grounded={grounded}  false-refusals={false_ref}")
         print(f"tricks ({len(tricks)}): correctly refused={refused}/{len(tricks)}")
+        if errored_n:
+            print(f"ERRORED (free-tier, not scored): {errored_n} — re-run with --resume")
         print(f"per-question outputs -> {out_path}")
         md_row = md_row[:-1] + (f" cited {cited}/{n} | grounded {grounded}/{n} | "
                                 f"false-ref {false_ref} | trick-refuse {refused}/{len(tricks)} |")
