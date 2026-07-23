@@ -116,30 +116,36 @@ def main() -> None:
         RESULTS_DIR.mkdir(exist_ok=True)
         out_path = RESULTS_DIR / f"{args.tag}.jsonl"
 
-        done_ids: set[str] = set()
+        # Keep prior SUCCESSFUL answers; errored/missing rows are (re)attempted.
+        results: dict[str, dict] = {}
         if args.resume and out_path.exists():
-            done_ids = {json.loads(l)["id"] for l in out_path.open()}
-            print(f"resuming: {len(done_ids)} already done, skipping them")
+            results = {json.loads(l)["id"]: json.loads(l) for l in out_path.open()}
+            done = sum(1 for r in results.values() if not r.get("errored"))
+            print(f"resuming: {done} already succeeded (kept), retrying the rest")
 
-        todo = [r for r in rows if r["id"] not in done_ids]
-        mode = "a" if args.resume else "w"
-        with out_path.open(mode) as f:
-            for i, row in enumerate(todo):
-                out = answer_with_retry(answer, row["question"], args.top_k)
-                errored = out.startswith("__ERROR__")
-                lead_refusal = (not errored) and out.lower().startswith(REFUSAL.lower())
-                cite_pages = set() if errored else {int(p) for p in CITE.findall(out)}
-                got_pages = {c["page"] for _, c in retrieved[row["id"]]}
-                rec = {"id": row["id"], "question": row["question"], "answer": out,
-                       "errored": errored, "lead_refusal": lead_refusal,
-                       "cited_pages": sorted(cite_pages), "retrieved_pages": sorted(got_pages)}
-                f.write(json.dumps(rec) + "\n")
-                f.flush()  # survive a crash: keep every completed answer on disk
-                if i < len(todo) - 1:
-                    time.sleep(GEN_SLEEP_S)
+        todo = [r for r in rows if results.get(r["id"], {}).get("errored", True)]
 
-        # Aggregate from the file so --resume runs score the full set.
-        allrecs = {json.loads(l)["id"]: json.loads(l) for l in out_path.open()}
+        def _flush() -> None:  # rewrite the whole file in question order
+            with out_path.open("w") as f:
+                for row in rows:
+                    if row["id"] in results:
+                        f.write(json.dumps(results[row["id"]]) + "\n")
+
+        for i, row in enumerate(todo):
+            out = answer_with_retry(answer, row["question"], args.top_k)
+            errored = out.startswith("__ERROR__")
+            lead_refusal = (not errored) and out.lower().startswith(REFUSAL.lower())
+            cite_pages = set() if errored else {int(p) for p in CITE.findall(out)}
+            got_pages = {c["page"] for _, c in retrieved[row["id"]]}
+            results[row["id"]] = {
+                "id": row["id"], "question": row["question"], "answer": out,
+                "errored": errored, "lead_refusal": lead_refusal,
+                "cited_pages": sorted(cite_pages), "retrieved_pages": sorted(got_pages)}
+            _flush()  # survive a crash: keep every completed answer on disk
+            if i < len(todo) - 1:
+                time.sleep(GEN_SLEEP_S)
+
+        allrecs = results
         cited = grounded = false_ref = refused = errored_n = 0
         for row in rows:
             r = allrecs.get(row["id"])

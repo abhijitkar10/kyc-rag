@@ -68,3 +68,11 @@ Result: **v2 retrieval re-baseline: recall@1 = 0.61, recall@5 = 0.82** (36/44). 
 Key read: recall@1 (0.61) << recall@5 (0.82) → answer chunk usually retrieved but rarely rank-1 → a cross-encoder reranker (Phase 3.4) is the highest-leverage fix. The 8 misses cluster into paraphrase / amendment-footnote / clause-split — exactly the Phase-3 targets.
 Also: hardened run_eval.py against free-tier 429s (retry w/ exponential backoff 10/20/40s; per-answer flush so a crash keeps progress; --resume to continue) — the first background gen run had died on a transient 429 after 1 question and lost everything.
 Lesson: a bigger eval set changes the numbers but not the diagnosis; and an eval harness that talks to a rate-limited free API must be crash-resilient and resumable, or you lose an 8-minute run to one blip.
+
+## 2026-07-23 — Free-tier daily quota exhausted (generation eval deferred)
+Changed: ran the hardened 50-question generation eval; investigated the outcome.
+Expected: full cited/grounded/refusal numbers on all 50.
+Result: all 50 returned 429 RESOURCE_EXHAUSTED ("exceeded your current quota"). A fresh single call also 429s, and gemini-2.0-flash-lite 429s too -> the free-tier daily quota is PROJECT-LEVEL and exhausted for today (a day of testing: smoke x3 + diagnostics + a crashed run + 50x up-to-4 retries). Resets in ~24h. The hardening WORKED: the run completed cleanly and wrote all 50 records (each errored) instead of crashing and losing progress.
+Fixed: --resume now keeps only SUCCESSFUL prior answers and re-attempts errored/missing rows, rewriting the file in question order (no duplicate ids). So after reset: `python eval/run_eval.py --gen --tag exp0b-gen --resume` finishes just the failures.
+Not blocked: retrieval eval needs NO LLM and is exactly what Phase 3 optimizes (recall@k via BM25/hybrid/chunking/rerank). Generation grounding numbers are a periodic nice-to-have; faithfulness was already demonstrated on the Phase-1 smoke run.
+Lesson: budget free-tier request-per-day quota like a scarce resource — don't spend it on iterative debugging you can do with retrieval-only eval. Design the harness so a full quota-blocked run is recoverable (it is now).
