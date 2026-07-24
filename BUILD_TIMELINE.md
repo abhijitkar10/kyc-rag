@@ -109,3 +109,21 @@ Next: Phase 2 (formalize eval harness) then Phase 3 experiments.
 18. **Hardened the harness against free-tier rate limits** — the first background generation
     run died on a transient 429 after one question and lost all progress; added retry with
     exponential backoff, per-answer flush-to-disk, and `--resume`.
+
+## 2026-07-23 — Day 2 (continued): Phase 3 retrieval experiments (the heart)
+
+19. **Built a swappable-retriever seam** (`src/retrievers.py`, `run_eval.py --retriever`) so
+    every retrieval idea is a one-flag A/B, graded with NO LLM (quota-independent).
+20. **3.1 BM25 from scratch** (`src/bm25.py`, no library): recall@5 0.84. Found it
+    COMPLEMENTARY to dense (each catches the other's misses) → union ceiling 0.91.
+21. **3.2 Hybrid via RRF**: recall@5 **0.91**, recall@1 0.61→0.73 — biggest win. Documented
+    RRF's consensus trade-off (recovered both-miss items, dropped single-retriever-strong ones).
+22. **3.3 Clause-aware chunking: NEGATIVE, reverted** — regressed to 0.82 because long clauses
+    were windowed without overlap + identical prefixes → within-clause dilution. Measured, reverted.
+23. **3.4a ms-marco reranker: NEGATIVE** — regressed to 0.84 (fragmented chunks are OOD for a
+    web-trained CE). **3.4b BGE reranker: WINNER** — recall@5 **0.93**, recall@1 **0.77**. Same
+    pipeline, stronger model → +0.09 vs -0.07. Wired answer/ask to a configurable retriever
+    (default hybrid for speed; RETRIEVER=rerank for peak).
+
+**Phase 3: complete. recall@5 0.82 → 0.93, recall@1 0.61 → 0.77, plus two documented negative results.**
+Next: Phase 4 (mandatory citations, refusal threshold — separation still overlaps —, versioning).
