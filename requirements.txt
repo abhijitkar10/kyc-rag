@@ -1,5 +1,7 @@
 pypdf                  # PDF -> text extraction
 numpy                  # vectors + cosine similarity
-sentence-transformers  # local embeddings (BAAI/bge-small-en-v1.5)
+sentence-transformers  # local embeddings (BAAI/bge-small-en-v1.5) + BGE reranker
 google-genai           # Gemini API (generation step, free tier) — primary
 anthropic              # Claude API (generation step) — optional fallback
+fastapi                # thin web app (src/app.py)
+uvicorn[standard]      # ASGI server for the web app

@@ -1,36 +1,115 @@
-# KYC Compliance RAG Assistant
+# RBI KYC Compliance Assistant
 
-A retrieval-augmented question-answering system over the RBI Master Direction on KYC —
-with clause-level citations, refusal on weak retrieval, and amendment-aware versioning.
+A retrieval-augmented question-answering system over the **RBI Master Direction on KYC**
+(2025 consolidated, 107 pages). It answers compliance questions with **clause-level
+citations**, **refuses when the answer isn't in the corpus**, and knows the document's
+**amendment history** — the three things a real compliance tool needs and a demo bot doesn't.
 
-**Master plan:** see `RAG Project — Master Plan.md` in the vault (05 Career).
-**Every experiment is logged in** `LAB_NOTEBOOK.md`.
+Built as a from-scratch systems project: **no LangChain/LlamaIndex**, BM25 and vector search
+implemented by hand, every improvement measured against a held-out eval set.
 
-## Status
+---
 
-- Phase 0 — foundations & data immersion: **in progress**
+## Why this problem
 
-## Layout
+Every RBI-regulated entity (banks, NBFCs, payment companies) must follow the KYC Master
+Direction; getting it wrong means fines or onboarding bans. The rulebook is long, dense, and
+amended constantly. "Which ID documents are valid?" or "can we open an account over video?"
+means digging through 100+ pages — work compliance teams pay real money for. A wrong answer is
+worse than none, so citations and honest refusals are the product, not decoration.
+
+## What it does
 
 ```
-data/raw/         downloaded RBI PDFs (dated filenames)
-data/processed/   extracted text, chunks
-src/              pipeline code (built in Phase 1)
-eval/             questions.csv + scoring script
-LAB_NOTEBOOK.md   experiment log
+$ python src/ask.py "Can I open a bank account over a video call?"
+Yes — through the Video-based Customer Identification Process (V-CIP), a live,
+informed-consent audio-visual interaction with an authorised official of the RE,
+treated on par with face-to-face verification [KYC Master Direction, p.27].
+
+$ python src/ask.py "What are the tax benefits under Section 80C?"
+Not found in the provided documents.
 ```
 
-## Setup
+## Architecture
+
+```
+question ─▶ RETRIEVAL (the hard part)                        ─▶ GENERATION ─▶ GUARDRAIL
+            ├─ dense: BGE-small embeddings + hand-written        LLM answers    citation
+            │         cosine top-k                               ONLY from      check:
+            ├─ BM25:  from scratch (inverted index, IDF)         retrieved      every cited
+            └─ hybrid: Reciprocal Rank Fusion                    chunks, must   page must be
+               (+ optional BGE cross-encoder rerank)             cite [p.N]     in retrieved set
+```
+
+The generator is a **swappable commodity** behind a one-function interface (`src/llm.py`):
+Gemini free tier by default, Claude as a drop-in fallback. All the engineering is in retrieval.
+
+## Results — retrieval, measured one change at a time
+
+Held-out eval set of **50 questions** (44 answerable across the whole document + 6 out-of-corpus
+"trick" questions), every answer verified against the PDF by hand. Metric: **recall@5** (did a
+top-5 chunk come from the clause's page?).
+
+| Retriever | recall@1 | recall@5 | note |
+|---|---|---|---|
+| dense (baseline) | 0.61 | 0.82 | BGE-small embeddings + cosine |
+| BM25 from scratch | 0.59 | 0.84 | complementary to dense |
+| **hybrid (RRF)** | 0.73 | **0.91** | biggest single win |
+| + clause-aware chunking | 0.64 | 0.82 | ❌ **negative result, reverted** |
+| + ms-marco reranker | 0.66 | 0.84 | ❌ negative (fragmented chunks OOD) |
+| **+ BGE reranker** ⭐ | **0.77** | **0.93** | winner; same technique, stronger model |
+
+**recall@5: 0.82 → 0.93. recall@1: 0.61 → 0.77.** Full experiment log in `EXPERIMENTS.md` and
+`LAB_NOTEBOOK.md`. The two negative results are kept on purpose — measuring caught two changes
+that *looked* obviously good and weren't.
+
+## Safety layer
+
+- **Mandatory citations** — every claim cites `[KYC Master Direction, p.N]`; a post-check
+  (`src/verify.py`, 7 unit tests) flags any cited page **not** in the retrieved set, catching
+  hallucinated citations.
+- **Refusal by evidence, not by threshold** — we *measured* that answerable and out-of-corpus
+  retrieval scores overlap on every retriever, so a score cutoff can't separate them. Refusal is
+  enforced at generation (strict-grounding prompt) and validated by the citation check.
+- **Versioning** — `src/amendments.py` parses the document's footnotes into a **14-circular
+  amendment timeline**; the system knows which circular changed what, and when.
+
+## Numbers
+
+- **Retrieval latency** (local, measured over 50 queries): **p50 ≈ 10 ms, p95 ≈ 18 ms**.
+- **Cost/query**: ₹0 on the Gemini free tier. Token-based estimate on paid tiers: ~1.2K input +
+  ~300 output tokens ≈ **₹0.09/query on Gemini 2.5 Flash, ₹0.23 on Claude Haiku 4.5**.
+
+## Run it
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+echo 'GEMINI_API_KEY=your-key' > .env        # free key: https://aistudio.google.com/apikey
 
-# LLM key for the answer step (retrieval works without it).
-# Free Gemini key: https://aistudio.google.com/apikey
-echo 'GEMINI_API_KEY=your-key-here' > .env    # .env is gitignored
+python src/extract.py && python src/chunk.py && python src/embed.py   # build the index (once)
+python src/ask.py "How long must banks keep KYC records?"            # CLI
+uvicorn app:app --app-dir src                                        # web UI at :8000
+
+python eval/run_eval.py                       # retrieval scorecard (no key needed)
+python eval/run_eval.py --gen --retriever hybrid   # + generation behaviour (needs key)
+python eval/test_verify.py                    # citation-guardrail unit tests
+python src/amendments.py                      # amendment timeline
 ```
 
-The generator picks Gemini if a Gemini key is present, else Claude — see `src/llm.py`.
+Default retriever is `hybrid` (fast, recall@5 0.91, no heavy model). `RETRIEVER=rerank` uses the
+BGE cross-encoder for the peak 0.93 (loads a ~1.1GB model).
 
+## What I'd do next
+
+- Chunk-level (not page-level) recall grading — page-level is slightly optimistic.
+- Complete the 50-question generation-behaviour eval (blocked only by the free-tier daily quota;
+  harness is `--resume`-able).
+- Ingest the individual amendment circulars for true old-vs-new text diffing (RBI's doc server
+  bot-blocks scripted downloads; links recorded in `READING_GUIDE.md`).
+
+## Honest notes
+
+Built with an AI assistant as a pair-programmer and teacher; the design decisions, document
+reading, eval ground truth, and experiment analysis are the author's. See `BUILD_TIMELINE.md`
+for the full build history and `FRIEND_ONBOARDING.md` for how to verify and own the project.
