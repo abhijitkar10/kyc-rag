@@ -6,11 +6,14 @@ Add --show-chunks to also print what the retriever found (useful for debugging
 why an answer went wrong: is it the librarian or the writer?).
 """
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from search import search  # noqa: E402
+from retrievers import get_retriever  # noqa: E402
+
+search = get_retriever(os.environ.get("RETRIEVER", "hybrid"))
 
 
 def main() -> None:

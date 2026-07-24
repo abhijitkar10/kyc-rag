@@ -102,3 +102,10 @@ Expected: recover the single-retriever-strong misses {7,17} → beat hybrid 0.91
 Result: REGRESSED — recall@1 0.73→0.66, recall@5 0.91→0.84. Misses grew to {3,7,8,12,17,23,26}. The CE gave several answerable questions strongly negative scores (min -5.76). Likely cause: naive 800-char chunks start/end mid-sentence, so the CE (trained on clean MS-MARCO web passages) sees fragmented, out-of-distribution text and ranks erratically; it also fully REPLACES the good hybrid ordering, so a noisy CE actively hurts.
 Next: try a stronger, domain-robust reranker (BAAI/bge-reranker-base) before concluding reranking doesn't help here (exp 3.4b, running).
 Lesson: a reranker is only as good as (a) its domain fit and (b) the cleanliness of the chunks it reads. Fragmented chunks + web-trained CE = worse than no rerank. Reranking and chunking are coupled.
+
+## 2026-07-23 — Exp 3.4b: BGE reranker (WINNER) + wire-up
+Changed: ran rerank with RERANK_MODEL=BAAI/bge-reranker-base (hybrid top-20 → CE re-score → top-5). Then made it the default rerank model; wired answer.py/ask.py to get_retriever(RETRIEVER env, default "hybrid").
+Expected: a stronger reranker overcomes the fragmented-chunk problem that sank ms-marco.
+Result: **recall@1 0.77, recall@5 0.93 — best config.** Recovered Q17 (the amendment Q that RRF had diluted); misses now {3,7,23}. Same rerank pipeline as ms-marco but +0.09 vs -0.07 → the MODEL was the whole difference. Separation still overlaps: BGE gives some tricks high relevance (max 0.851) while some answerable score 0.020 — the reranker score alone can't gate refusal (Phase 4 must combine signals).
+Decision: pipeline default retriever = hybrid (0.91, fast, no 1.1GB model — good for the friend's laptop); RETRIEVER=rerank for peak 0.93 (demo/eval). Both wired and documented.
+Lesson: "add a reranker" is not a monolith — ms-marco HURT, BGE HELPED, same code. The component choice within a technique matters as much as the technique. And a reranker's relevance score is NOT a refusal signal (tricks can score high). Phase 3 overall: 0.82→0.93 recall@5, 0.61→0.77 recall@1, with two honest negative results.

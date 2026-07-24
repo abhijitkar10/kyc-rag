@@ -48,9 +48,10 @@ def get_retriever(name: str):
         import os
         from sentence_transformers import CrossEncoder
         hybrid = get_retriever("hybrid")
-        # Default: small MS-MARCO cross-encoder. Override with RERANK_MODEL,
-        # e.g. BAAI/bge-reranker-base (stronger, pairs with the BGE embedder).
-        ce = CrossEncoder(os.environ.get("RERANK_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2"))
+        # Default: BAAI/bge-reranker-base — the Phase-3 winner (recall@5 0.93),
+        # pairs with the BGE embedder. The lighter cross-encoder/ms-marco-MiniLM-L-6-v2
+        # is weaker on this corpus (regressed to 0.84); set RERANK_MODEL to try it.
+        ce = CrossEncoder(os.environ.get("RERANK_MODEL", "BAAI/bge-reranker-base"))
 
         def rerank(q: str, top_k: int = 5, pool: int = 20):
             cands = hybrid(q, top_k=pool)              # fast stage: fused candidates

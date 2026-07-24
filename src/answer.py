@@ -3,12 +3,17 @@
 Provider is chosen automatically (Gemini free tier, else Claude) — see llm.py.
 """
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from search import search  # noqa: E402
+from retrievers import get_retriever  # noqa: E402
 import llm  # noqa: E402
+
+# Default to hybrid: 0.91 recall@5, fast, no heavy model. Set RETRIEVER=rerank
+# for the peak config (0.93) at the cost of loading the ~1.1GB BGE reranker.
+_search = get_retriever(os.environ.get("RETRIEVER", "hybrid"))
 
 SYSTEM = """You are a compliance assistant for the RBI KYC Master Direction.
 Answer ONLY from the excerpts provided by the user. For every claim, cite the
@@ -18,7 +23,7 @@ knowledge. If the answer is not contained in the excerpts, reply exactly:
 
 
 def answer(question: str, top_k: int = 5) -> str:
-    hits = search(question, top_k=top_k)
+    hits = _search(question, top_k=top_k)
     excerpts = "\n\n".join(
         f"[Excerpt {i+1} — KYC Master Direction, p.{c['page']}]\n{c['text']}"
         for i, (_, c) in enumerate(hits)

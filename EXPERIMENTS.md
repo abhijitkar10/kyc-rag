@@ -16,6 +16,9 @@ NOT comparable** — v2 re-baselines everything.
 | exp3-clause-dense | v2 (50q) | 0.68 | 0.77 ↓ | 0.62 / 0.75 — overlap | clause-aware chunks (539, avg 436c). **NEGATIVE** — recall@5 down from 0.82. recall@1 up (focused chunks rank better *when found*). |
 | exp3-clause-hybrid | v2 (50q) | 0.64 | 0.82 ↓ | overlap | **NEGATIVE, REVERTED.** Hybrid dropped 0.91→0.82. New misses all in LONG clauses (para 3/16/18/38): my chunker windows long clauses with NO overlap + identical `[Para X]` prefix → windows embed alike, answer-bearing one diluted. Kept naive chunks. Future work: overlap + sub-clause ((a)/(i)) splitting. |
 | exp4-rerank (ms-marco) | v2 (50q) | 0.66 ↓ | 0.84 ↓ | -5.76 / 3.64 — overlap | **NEGATIVE.** cross-encoder/ms-marco-MiniLM-L-6-v2 over hybrid top-20. Regressed below hybrid 0.91. Naive chunks start/end mid-sentence (fragmented, out-of-distribution for a web-passage-trained reranker); some answerable Qs scored -5.8. |
+| **exp4b-rerank (BGE)** ⭐ | v2 (50q) | **0.77** | **0.93** | 0.02 / 0.85 — overlap | **WINNER.** BAAI/bge-reranker-base over hybrid top-20. Best on both metrics; recovered Q17. Same technique as ms-marco, but a stronger domain-fit model → +0.09 instead of -0.07. Misses {3,7,23}. Trick scores still overlap (a trick can look "relevant" to the reranker) → Phase-4 threshold must not rely on rerank score alone. |
+
+**Phase 3 result: recall@5 0.82 → 0.93, recall@1 0.61 → 0.77.** Pipeline default = `hybrid` (fast, 0.91, no 1.1GB model); `RETRIEVER=rerank` for the peak 0.93. Two negative results (clause chunking, ms-marco rerank) documented. Remaining hard misses {3,7,23} and the still-overlapping trick separation carry into Phase 4.
 
 **Read of exp0b:** recall@1 (0.61) << recall@5 (0.82) — the right chunk is usually retrieved but
 often not rank-1 → a reranker (Phase 3.4) should help most. 8 misses (Q2,3,8,11,17,23,26,46) are
