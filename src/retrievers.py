@@ -44,4 +44,22 @@ def get_retriever(name: str):
 
         return hybrid
 
+    if name == "rerank":
+        import os
+        from sentence_transformers import CrossEncoder
+        hybrid = get_retriever("hybrid")
+        # Default: small MS-MARCO cross-encoder. Override with RERANK_MODEL,
+        # e.g. BAAI/bge-reranker-base (stronger, pairs with the BGE embedder).
+        ce = CrossEncoder(os.environ.get("RERANK_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2"))
+
+        def rerank(q: str, top_k: int = 5, pool: int = 20):
+            cands = hybrid(q, top_k=pool)              # fast stage: fused candidates
+            if not cands:
+                return []
+            scores = ce.predict([(q, c["text"]) for _, c in cands])  # joint scoring
+            order = sorted(range(len(cands)), key=lambda i: scores[i], reverse=True)
+            return [(float(scores[i]), cands[i][1]) for i in order[:top_k]]
+
+        return rerank
+
     raise ValueError(f"unknown retriever: {name}")
