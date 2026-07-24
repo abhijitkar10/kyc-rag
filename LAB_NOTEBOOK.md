@@ -82,3 +82,9 @@ Changed: wrote src/bm25.py (Okapi BM25 from scratch — inverted index, IDF, k1=
 Expected: BM25 strong on exact-keyword Qs (circular numbers, "DigiLocker"), weak on pure-semantic Qs (video↔V-CIP).
 Result: **recall@1 0.59, recall@5 0.84** (37/44). BM25 misses {3,7,23,26,27,46,47}; dense misses {2,3,8,11,17,23,26,46}. COMPLEMENTARY: BM25 catches dense's 2/8/11/17 (exact keywords incl. amendment circular #s), dense catches BM25's 7/27/47 (7 = "video call" vs text "V-CIP", pure semantic). Both miss only {3,23,26,46} → union ceiling = 40/44 = 0.91.
 Lesson: my Phase-1 guess that paraphrase Qs (8 driving-licence, 11 DigiLocker) were "semantic" was half wrong — they contain the exact keyword too, so BM25 nails them. The genuinely semantic-only miss is Q7. This complementarity is the empirical case FOR hybrid (3.2).
+
+## 2026-07-23 — Exp 3.2: Hybrid (dense + BM25 via RRF)
+Changed: added hybrid retriever to retrievers.py — Reciprocal Rank Fusion, k=60, pool=30 from each retriever, fuse on chunk id. Uses rank position only (cosine 0-1 and BM25 0-15 scales never mixed).
+Expected: approach the 0.91 union ceiling from 3.1.
+Result: **recall@1 0.73, recall@5 0.91** (40/44) — biggest single jump so far (dense 0.82→0.91, recall@1 0.61→0.73). Misses {3,7,17,23}, NOT the naive union {3,23,26,46}. Nuance: RRF RECOVERED both-miss {26,46} (each present in both top-30 lists → fusion lifted them into top-5) but DROPPED {7,17} which were single-retriever-STRONG (Q7 dense-only rank-high, Q17 BM25-only rank-high) — consensus reward diluted them below top-5.
+Lesson: RRF trades single-retriever peaks for cross-retriever consensus. Net win (+ recall@1 especially), but it can drop items only ONE retriever finds well — those {7,17} are prime targets for a cross-encoder reranker (3.4) that reads query+chunk jointly. Standard k=60/pool=30 left untuned (one change at a time).
