@@ -10,7 +10,8 @@ NOT comparable** — v2 re-baselines everything.
 | tag | eval set | recall@1 | recall@5 | separation (ans-min / trick-max) | generation notes |
 |---|---|---|---|---|---|
 | exp0-baseline | v1 (20q) | — | 0.71 | 0.66 / 0.70 — overlap | smoke only: faithful refusal confirmed; 1 free-tier hallucination observed |
-| **exp0b-rebaseline** | **v2 (50q)** | **0.61** | **0.82** | **0.655 / 0.751 — overlap** | gen 50-q run blocked: Gemini free-tier **daily** quota exhausted (429). Harness is `--resume`-able; complete after ~24h reset. Faithfulness already confirmed on the Phase-1 smoke run. |
+| **exp0b-rebaseline** | **v2 (50q)** | **0.61** | **0.82** | **0.655 / 0.751 — overlap** | dense baseline. gen 50-q run blocked: Gemini free-tier **daily** quota (429); `--resume` after reset. |
+| exp1-bm25 | v2 (50q) | 0.59 | **0.84** | 11.2 / 14.1 — overlap | BM25 from scratch, ALONE. Misses {3,7,23,26,27,46,47} vs dense {2,3,8,11,17,23,26,46}: complementary — BM25 wins exact-keyword Qs (DigiLocker, circular #s), dense wins semantic Q7 (video↔V-CIP). Both miss only {3,23,26,46} → **hybrid ceiling 0.91**. |
 
 **Read of exp0b:** recall@1 (0.61) << recall@5 (0.82) — the right chunk is usually retrieved but
 often not rank-1 → a reranker (Phase 3.4) should help most. 8 misses (Q2,3,8,11,17,23,26,46) are

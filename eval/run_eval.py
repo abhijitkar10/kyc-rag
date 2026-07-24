@@ -29,7 +29,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from search import search  # noqa: E402
+from retrievers import get_retriever  # noqa: E402
 
 QUESTIONS = Path("eval/questions.csv")
 RESULTS_DIR = Path("eval/results")
@@ -64,6 +64,7 @@ def answer_with_retry(answer_fn, question: str, top_k: int, tries: int = 4) -> s
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--gen", action="store_true", help="also run generation checks")
+    ap.add_argument("--retriever", default="dense", help="dense | bm25 | hybrid | rerank")
     ap.add_argument("--top-k", type=int, default=5)
     ap.add_argument("--tag", default="run")
     ap.add_argument("--resume", action="store_true",
@@ -73,6 +74,7 @@ def main() -> None:
     rows = list(csv.DictReader(QUESTIONS.open()))
     answerable = [r for r in rows if r["answerable"] == "yes"]
     tricks = [r for r in rows if r["answerable"] == "no"]
+    search = get_retriever(args.retriever)
 
     # ---------- retrieval ----------
     r1 = r5 = 0
@@ -96,7 +98,7 @@ def main() -> None:
             trick_best.append(best)
 
     n = len(answerable)
-    print(f"== retrieval (top-{args.top_k}, {len(rows)} questions, tag={args.tag}) ==")
+    print(f"== retrieval [{args.retriever}] (top-{args.top_k}, {len(rows)} questions, tag={args.tag}) ==")
     print(f"recall@1 = {r1}/{n} = {r1/n:.2f}")
     print(f"recall@5 = {r5}/{n} = {r5/n:.2f}   misses: {', '.join(misses) or '-'}")
     print(f"separation: answerable best-scores min={min(ans_best):.3f}  "

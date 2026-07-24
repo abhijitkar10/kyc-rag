@@ -76,3 +76,9 @@ Result: all 50 returned 429 RESOURCE_EXHAUSTED ("exceeded your current quota"). 
 Fixed: --resume now keeps only SUCCESSFUL prior answers and re-attempts errored/missing rows, rewriting the file in question order (no duplicate ids). So after reset: `python eval/run_eval.py --gen --tag exp0b-gen --resume` finishes just the failures.
 Not blocked: retrieval eval needs NO LLM and is exactly what Phase 3 optimizes (recall@k via BM25/hybrid/chunking/rerank). Generation grounding numbers are a periodic nice-to-have; faithfulness was already demonstrated on the Phase-1 smoke run.
 Lesson: budget free-tier request-per-day quota like a scarce resource — don't spend it on iterative debugging you can do with retrieval-only eval. Design the harness so a full quota-blocked run is recoverable (it is now).
+
+## 2026-07-23 — Exp 3.1: BM25 from scratch (alone)
+Changed: wrote src/bm25.py (Okapi BM25 from scratch — inverted index, IDF, k1=1.5/b=0.75, no library) + src/retrievers.py (swappable retriever seam) + run_eval.py --retriever flag. Dense regression re-checked = 0.82 (unchanged).
+Expected: BM25 strong on exact-keyword Qs (circular numbers, "DigiLocker"), weak on pure-semantic Qs (video↔V-CIP).
+Result: **recall@1 0.59, recall@5 0.84** (37/44). BM25 misses {3,7,23,26,27,46,47}; dense misses {2,3,8,11,17,23,26,46}. COMPLEMENTARY: BM25 catches dense's 2/8/11/17 (exact keywords incl. amendment circular #s), dense catches BM25's 7/27/47 (7 = "video call" vs text "V-CIP", pure semantic). Both miss only {3,23,26,46} → union ceiling = 40/44 = 0.91.
+Lesson: my Phase-1 guess that paraphrase Qs (8 driving-licence, 11 DigiLocker) were "semantic" was half wrong — they contain the exact keyword too, so BM25 nails them. The genuinely semantic-only miss is Q7. This complementarity is the empirical case FOR hybrid (3.2).
