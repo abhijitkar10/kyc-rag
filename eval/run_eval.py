@@ -47,13 +47,14 @@ def expected_pages(clause_ref: str) -> set[int]:
     return pages
 
 
-def answer_with_retry(answer_fn, question: str, top_k: int, tries: int = 4) -> str:
+def answer_with_retry(answer_fn, question: str, top_k: int, retriever=None,
+                      tries: int = 4) -> str:
     """The Gemini free tier throws transient 429s. One shouldn't kill an 8-min
     run, so retry with exponential backoff; on final failure return a sentinel
     the caller records but doesn't score."""
     for attempt in range(tries):
         try:
-            return answer_fn(question, top_k=top_k).strip()
+            return answer_fn(question, top_k=top_k, retriever=retriever).strip()
         except Exception as e:  # noqa: BLE001 - free-tier errors are opaque
             if attempt == tries - 1:
                 return f"__ERROR__ {type(e).__name__}: {e}"
@@ -134,7 +135,7 @@ def main() -> None:
                         f.write(json.dumps(results[row["id"]]) + "\n")
 
         for i, row in enumerate(todo):
-            out = answer_with_retry(answer, row["question"], args.top_k)
+            out = answer_with_retry(answer, row["question"], args.top_k, retriever=search)
             errored = out.startswith("__ERROR__")
             lead_refusal = (not errored) and out.lower().startswith(REFUSAL.lower())
             cite_pages = set() if errored else {int(p) for p in CITE.findall(out)}

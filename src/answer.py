@@ -23,8 +23,10 @@ knowledge. If the answer is not contained in the excerpts, reply exactly:
 "Not found in the provided documents." """
 
 
-def answer(question: str, top_k: int = 5) -> str:
-    hits = _search(question, top_k=top_k)
+def answer(question: str, top_k: int = 5, retriever=None) -> str:
+    # `retriever` lets the eval harness pass the SAME retriever it grades with,
+    # so the grounding check compares against exactly what the LLM saw.
+    hits = (retriever or _search)(question, top_k=top_k)
     retrieved_pages = {c["page"] for _, c in hits}
     excerpts = "\n\n".join(
         f"[Excerpt {i+1} — KYC Master Direction, p.{c['page']}]\n{c['text']}"
