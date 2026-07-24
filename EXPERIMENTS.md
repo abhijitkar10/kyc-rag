@@ -20,6 +20,18 @@ NOT comparable** — v2 re-baselines everything.
 
 **Phase 3 result: recall@5 0.82 → 0.93, recall@1 0.61 → 0.77.** Pipeline default = `hybrid` (fast, 0.91, no 1.1GB model); `RETRIEVER=rerank` for the peak 0.93. Two negative results (clause chunking, ms-marco rerank) documented. Remaining hard misses {3,7,23} and the still-overlapping trick separation carry into Phase 4.
 
+## Phase 4 — safety layer
+
+Code complete + unit-tested (retrieval-graded, quota-free):
+- **Citation guardrail** (`src/verify.py`, 7/7 tests): flags cited pages not in the retrieved set.
+- **Versioning** (`src/amendments.py`): 14-circular amendment timeline from footnotes.
+- **Refusal by design**: no score threshold (measured overlap on every retriever); enforced at generation + citation check.
+
+Generation behavioural numbers (cited / grounded / false-refusal / trick-refusal on the 50-q set)
+are **deferred** — the free-tier daily quota only covers ~20 clean calls/day. Complete with:
+`python eval/run_eval.py --gen --retriever hybrid --tag exp5-safety --resume` across days, or a paid key.
+Harness bug fixed en route: generation + grounding now use the SAME retriever.
+
 **Read of exp0b:** recall@1 (0.61) << recall@5 (0.82) — the right chunk is usually retrieved but
 often not rank-1 → a reranker (Phase 3.4) should help most. 8 misses (Q2,3,8,11,17,23,26,46) are
 the Phase-3 targets: paraphrases (8,11,46), amendment footnote (17), and clause-split cases

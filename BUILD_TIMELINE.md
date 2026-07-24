@@ -127,3 +127,19 @@ Next: Phase 2 (formalize eval harness) then Phase 3 experiments.
 
 **Phase 3: complete. recall@5 0.82 → 0.93, recall@1 0.61 → 0.77, plus two documented negative results.**
 Next: Phase 4 (mandatory citations, refusal threshold — separation still overlaps —, versioning).
+
+## 2026-07-23 — Day 2 (continued): Phase 4 safety layer
+
+24. **Citation guardrail** (`src/verify.py`, wired into `answer()`, 7/7 unit tests): flags any
+    cited page not in the retrieved set — catches the hallucinated-citation failure from Phase 1.
+25. **Versioning** (`src/amendments.py`): parses footnotes into a 14-circular amendment timeline —
+    provenance without the bot-blocked circular PDFs.
+26. **Refusal by design, not by threshold**: since answerable/trick retrieval scores were measured
+    to overlap on every retriever, refusal is enforced at generation (strict grounding) + validated
+    by the citation check — an evidence-driven choice.
+27. **Fixed an eval-harness bug**: grounding was graded against dense pages while answers were
+    generated from hybrid; the harness now generates and grades with the same retriever.
+
+**Phase 4: safety CODE complete + unit-tested.** Generation behavioural numbers deferred — free-tier
+daily quota (~20 clean calls/day) needs a multi-day `--resume` or a paid key; faithfulness already
+shown by the smoke test. Next: Phase 5 (thin API + web UI, cost/latency, README, interview pack).
