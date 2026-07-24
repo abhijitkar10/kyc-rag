@@ -143,3 +143,19 @@ Next: Phase 4 (mandatory citations, refusal threshold — separation still overl
 **Phase 4: safety CODE complete + unit-tested.** Generation behavioural numbers deferred — free-tier
 daily quota (~20 clean calls/day) needs a multi-day `--resume` or a paid key; faithfulness already
 shown by the smoke test. Next: Phase 5 (thin API + web UI, cost/latency, README, interview pack).
+
+## 2026-07-23 — Day 2 (continued): Phase 5 polish + interview pack (COMPLETE)
+
+28. **Thin FastAPI app + web UI** (`src/app.py`) — /ask, /amendments, self-contained demo page;
+    verified via TestClient (no quota needed).
+29. **Perf numbers** (`eval/perf.py`) — retrieval latency p50 ~10ms, p95 ~18ms over 50 queries;
+    cost/query ~₹0.09 (Gemini paid) / ₹0 (free) by token count.
+30. **README as an engineering story** — problem → architecture → experiment table → safety →
+    numbers → next → honest notes.
+31. **INTERVIEW_PACK.md** — 60s pitch, 90s demo script, 5min walkthrough, design-decisions log,
+    12 grounded Q&A, honest AI-assisted framing.
+
+**Phase 5: complete. PROJECT COMPLETE — all 5 phases.** Retrieval recall@5 0.82→0.93; cited +
+refusing + version-aware; demoable CLI + web UI; every claim backed by a repo artifact.
+Open threads: finish the generation-behaviour eval after free-tier quota resets (`--gen --resume`);
+friend to run `FRIEND_ONBOARDING.md` to own it.
