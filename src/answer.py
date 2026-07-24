@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from retrievers import get_retriever  # noqa: E402
 import llm  # noqa: E402
+import verify  # noqa: E402
 
 # Default to hybrid: 0.91 recall@5, fast, no heavy model. Set RETRIEVER=rerank
 # for the peak config (0.93) at the cost of loading the ~1.1GB BGE reranker.
@@ -24,11 +25,15 @@ knowledge. If the answer is not contained in the excerpts, reply exactly:
 
 def answer(question: str, top_k: int = 5) -> str:
     hits = _search(question, top_k=top_k)
+    retrieved_pages = {c["page"] for _, c in hits}
     excerpts = "\n\n".join(
         f"[Excerpt {i+1} — KYC Master Direction, p.{c['page']}]\n{c['text']}"
         for i, (_, c) in enumerate(hits)
     )
-    return llm.complete(SYSTEM, f"{excerpts}\n\nQUESTION: {question}")
+    raw = llm.complete(SYSTEM, f"{excerpts}\n\nQUESTION: {question}")
+    # Phase 4 guardrail: flag any citation to a page we didn't actually retrieve.
+    checked, _verdict = verify.enforce(raw, retrieved_pages)
+    return checked
 
 
 if __name__ == "__main__":
