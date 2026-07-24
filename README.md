@@ -80,12 +80,24 @@ that *looked* obviously good and weren't.
 - **Cost/query**: ₹0 on the Gemini free tier. Token-based estimate on paid tiers: ~1.2K input +
   ~300 output tokens ≈ **₹0.09/query on Gemini 2.5 Flash, ₹0.23 on Claude Haiku 4.5**.
 
+## Add your API key (the one thing you must do)
+
+The answer step needs a language model. Get a **free Gemini key** (no credit card) at
+**https://aistudio.google.com/apikey**, then:
+
+```bash
+cp .env.example .env      # then open .env and paste your key after GEMINI_API_KEY=
+```
+
+`.env` is gitignored, so your key never leaves your machine. Retrieval and the eval scorecard
+work without a key; only the generated answers need it. (Prefer Claude? Put `ANTHROPIC_API_KEY`
+in `.env` instead — the pipeline auto-detects which one is present.)
+
 ## Run it
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-echo 'GEMINI_API_KEY=your-key' > .env        # free key: https://aistudio.google.com/apikey
 
 python src/extract.py && python src/chunk.py && python src/embed.py   # build the index (once)
 python src/ask.py "How long must banks keep KYC records?"            # CLI
