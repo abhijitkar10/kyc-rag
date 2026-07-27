@@ -10,6 +10,27 @@ implemented by hand, every improvement measured against a held-out eval set.
 
 ---
 
+## Quick start (one command)
+
+Everything runs through `run.sh` — it creates the virtualenv, installs deps, and builds the
+index automatically the first time.
+
+```bash
+./run.sh setup            # one-time: venv + deps + build index
+./run.sh all              # tests + retrieval scorecard + amendments + a sample answer
+
+./run.sh ask "How long must banks keep KYC records?"   # CLI
+./run.sh web              # web UI at http://127.0.0.1:8000
+./run.sh eval             # retrieval scorecard (no API key needed)
+./run.sh test             # citation-guardrail unit tests
+./run.sh                  # list all commands
+```
+
+Answering needs a **free** key (retrieval/eval/tests don't): get one at
+https://aistudio.google.com/apikey, then `cp .env.example .env` and paste it in.
+
+---
+
 ## Why this problem
 
 Every RBI-regulated entity (banks, NBFCs, payment companies) must follow the KYC Master
