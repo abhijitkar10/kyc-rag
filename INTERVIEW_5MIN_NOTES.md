@@ -231,12 +231,22 @@ Say only what you can back up. Current status:
 | 431 chunks, 107 pages, 14 circulars | ✅ Factual |
 | 7 unit tests | ✅ Run `./run.sh test` |
 | Retrieval latency < 20 ms | ✅ Measured locally (`eval/perf.py`) |
-| **Refusal on 6/6 out-of-corpus queries** | ⚠️ **NOT fully measured yet** — the 50-question generation run was cut short by a free-tier quota limit. Refusal was confirmed on the smoke-test subset only. |
+| **Zero hallucinated citations (14/14 grounded)** | ✅ Measured (exp6, 2026-08-26) |
+| **Refused 3/3 out-of-corpus questions** | ✅ Measured — say **3/3**, not 6/6 |
+| Full 50-question generation run | ⚠️ 21/50 done; free-tier daily quota. `./run.sh eval-gen --resume` finishes it. |
 
-**Fix before using that number:** run `./run.sh eval-gen --resume` until all 50 complete,
-then quote the real figure. Until then, say it the honest way:
-> *"It refuses out-of-corpus questions — I verified that behaviour on my trick questions;
-> I'm still completing the full 50-question generation run because of a free-tier API quota."*
+**Do NOT say "6/6".** Only 3 trick questions were reached before the quota cut in. Say:
+> *"It refused 3 out of 3 out-of-corpus questions it was tested on, with zero hallucinated
+> citations across the run — I'm still completing the remaining questions because of a
+> free-tier API quota."*
 
-That sentence is *more* impressive than a shaky number: it shows you know exactly what you've
-measured and what you haven't.
+## The best safety story you have (use this — it's stronger than any single number)
+
+> "Four answerable questions got refused, which looks like a failure. But when I checked, three
+> of those four were cases where retrieval never found the right page — so refusing was the
+> *correct* behaviour. The system failed safe instead of making something up. Only one was a
+> genuine false refusal. That's exactly why I measure retrieval and generation separately —
+> otherwise 'four false refusals' would have looked like a bug instead of the system working."
+
+That answer shows judgement, honest measurement, and understanding of failure modes — worth more
+than a clean number.

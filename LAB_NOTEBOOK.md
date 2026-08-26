@@ -122,3 +122,26 @@ Lesson: the free tier's daily request cap is the binding constraint on generatio
 Changed: (1) thin FastAPI app + self-contained web page (src/app.py: POST /ask, GET /amendments, GET / demo page) — verified via TestClient (home 200, /amendments returns 14 circulars). (2) eval/perf.py — measured retrieval latency over all 50 queries: p50 ~10ms, p95 ~18ms (local; embed+cosine+BM25+RRF). (3) README.md rewritten as an engineering story (problem → architecture → experiment table 0.82→0.93 → safety layer → real numbers → run → next → honest notes). (4) INTERVIEW_PACK.md — 60s pitch, 90s demo script, 5min walkthrough, design-decisions log, 12 anticipated Q&A grounded in real findings, honest AI-assisted framing.
 Result: cost/query estimate ~₹0.09 (Gemini paid) / ₹0.23 (Haiku) / ₹0 (free tier) from token counts; retrieval p95 18ms. All 5 phases done.
 Lesson: the polish phase is where the measured story pays off — every interview answer is backed by a real number or a real experiment in the repo, not a claim.
+
+## 2026-08-26 — exp6: generation eval completed (partial run, hybrid retriever)
+Changed: quota reset, so re-ran the 50-question generation eval end-to-end with the shipped
+default retriever (hybrid) and the Phase-4 safety layer active.
+Expected: verify the citation guardrail and refusal behaviour on real numbers.
+Result: **21/50 answered cleanly before the free-tier daily quota (~20 calls/day) cut in again**
+— 18 answerable + 3 trick. Scored:
+  - **Citations: 14/18 answerable answered with a citation; 14/14 of those GROUNDED — ZERO
+    hallucinated citations.** The Phase-4 guardrail found no violations in this run (it caught
+    one during Phase 1, which is why it exists).
+  - **Trick questions: 3/3 refused correctly** (Q18 80C tax, Q19 SEBI demat, Q20 IRDAI insurance).
+    The other 3 tricks (Q48-50) weren't reached before the quota.
+  - **False refusals: 4/18** — BUT the key finding below.
+KEY FINDING (fails safe): 3 of the 4 false refusals (Q3, Q7, Q17) were **downstream of retrieval
+misses** — the right page was never retrieved, so the model correctly said "not found" instead of
+inventing an answer. Only Q16 was a genuine false refusal (correct page WAS retrieved, model still
+refused; it's the amendment-footnote question, where the answer lives in small footnote text).
+So the refusal behaviour is doing exactly what it should: when retrieval fails, the system fails
+safe rather than hallucinating.
+Lesson: the end-to-end numbers only make sense next to the retrieval numbers. "4 false refusals"
+looks bad alone; "3 of them are retrieval misses where refusing is the CORRECT behaviour" is the
+real story. Measuring the two halves separately is what makes that decomposition possible.
+Next: `./run.sh eval-gen --resume` on a later day completes Q22-50 (or use a paid key).

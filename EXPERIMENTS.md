@@ -40,3 +40,20 @@ after retrieval improves.
 
 Planned (Phase 3, one change at a time): BM25-alone → hybrid RRF → clause-aware chunking →
 cross-encoder rerank. Phase 4 threshold work only starts once separation exists.
+
+## Phase 4 results — generation & safety (exp6, hybrid retriever, 2026-08-26)
+
+Free-tier daily quota (~20 calls/day) capped the run at **21/50 clean answers** (18 answerable,
+3 trick). Complete the rest with `./run.sh eval-gen --resume`. What the 21 show:
+
+| Metric | Result |
+|---|---|
+| Citations grounded (cited page ∈ retrieved pages) | **14 / 14 — zero hallucinated citations** |
+| Answerable questions answered with a citation | 14 / 18 |
+| Out-of-corpus (trick) questions refused | **3 / 3** (Q48–50 not yet reached) |
+| False refusals | 4 / 18 — **3 of which were retrieval misses (correct behaviour)** |
+
+**Key finding — the system fails safe.** 3 of the 4 false refusals (Q3, Q7, Q17) happened because
+retrieval never surfaced the right page, so the model refused instead of inventing an answer. Only
+Q16 was a true false refusal (right page retrieved, model still refused — it's the footnote-based
+amendment question). Refusing on a retrieval miss is the desired failure mode in compliance.

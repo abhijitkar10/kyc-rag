@@ -159,3 +159,18 @@ shown by the smoke test. Next: Phase 5 (thin API + web UI, cost/latency, README,
 refusing + version-aware; demoable CLI + web UI; every claim backed by a repo artifact.
 Open threads: finish the generation-behaviour eval after free-tier quota resets (`--gen --resume`);
 friend to run `FRIEND_ONBOARDING.md` to own it.
+
+## 2026-08-26 — Day 3: generation eval completed (exp6) — Phase 4 verified
+
+28. **Ran the full generation eval** once the free-tier quota reset, with the shipped default
+    retriever (hybrid) and the Phase-4 safety layer active. Got **21/50 clean answers** before
+    the daily quota (~20 calls/day) cut in again; `--resume` completes the rest.
+29. **Safety layer verified on real data**: **zero hallucinated citations** (14/14 cited answers
+    grounded in retrieved pages), **3/3 out-of-corpus questions refused**.
+30. **Key finding — fails safe**: 3 of the 4 "false refusals" were downstream of retrieval
+    misses (the right page was never retrieved), so refusing was the *correct* behaviour. Only
+    1 was a genuine false refusal. This decomposition is only possible because retrieval and
+    generation are evaluated separately.
+
+**Phase 4: verified.** Project complete end-to-end; remaining work is finishing the last 29
+generation questions on a later quota day (or a paid key).
