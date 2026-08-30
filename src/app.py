@@ -5,8 +5,10 @@
 GET  /          -> the demo page
 POST /ask       -> {question} -> {answer, retrieved_pages, provider, latency_ms}
 GET  /amendments-> the amendment timeline (versioning showcase)
+GET  /questions -> the eval set, grouped by category (what each case tests)
 """
 
+import csv
 import sys
 import time
 from pathlib import Path
@@ -46,6 +48,47 @@ def ask(body: Ask):
 def amendment_timeline():
     return [{"date": d, "circular": c, "pages_touched": n}
             for d, c, n in amendments.timeline()]
+
+
+# What each eval category is designed to test. Shown in the UI so a reader can see
+# the eval set covers distinct failure modes, not 50 variations of one easy question.
+CATEGORY_INFO = [
+    ("direct", "Direct lookup",
+     "Asked using the document's own vocabulary. Tests basic retrieval."),
+    ("paraphrase", "Paraphrased",
+     "Everyday wording that deliberately avoids the document's terms — the doc says "
+     "\u201cV-CIP\u201d, the question says \u201cvideo call\u201d. This is what "
+     "keyword search alone fails, so it tests the semantic half of retrieval."),
+    ("numeric", "Threshold / limit",
+     "A specific rupee cap, percentage, deadline or timeline. Unambiguous to grade, "
+     "and the answer is easy to get subtly wrong by pulling a similar-looking number "
+     "from a different account type."),
+    ("entity", "Entity-specific",
+     "Document requirements that differ by customer type (company, partnership, trust, "
+     "sole proprietor). Tests whether retrieval keeps near-identical clauses apart."),
+    ("amendment", "Amendment / provenance",
+     "Which circular changed a clause, and when. The answer lives in small footnote "
+     "text, which makes it the hardest category to retrieve."),
+    ("trick", "Out of corpus \u2014 must refuse",
+     "Plausible, adjacent, and NOT in this document (income tax, SEBI, IRDAI, crypto). "
+     "The correct behaviour is to refuse, not to answer from a loosely-related clause."),
+]
+
+
+@app.get("/questions")
+def questions():
+    """The eval set, grouped by category — read live from eval/questions.csv."""
+    path = Path(__file__).resolve().parent.parent / "eval" / "questions.csv"
+    rows = list(csv.DictReader(path.open()))
+    out = []
+    for key, title, why in CATEGORY_INFO:
+        items = [{"id": int(r["id"]), "question": r["question"],
+                  "clause": r["clause_ref"] or None}
+                 for r in rows if r.get("category") == key]
+        if items:
+            out.append({"key": key, "title": title, "why": why,
+                        "count": len(items), "questions": items})
+    return {"total": len(rows), "groups": out}
 
 
 PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -120,6 +163,33 @@ PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
    margin-top:2.5rem;padding-top:.9rem;border-top:1px solid var(--rule);
    font-family:ui-sans-serif,sans-serif;font-size:.72rem;color:var(--muted)
  }
+ /* eval-set browser */
+ .evalhead{margin-top:2.2rem;padding-top:1.1rem;border-top:1px solid var(--rule)}
+ details{border-bottom:1px solid var(--rule);padding:.55rem 0}
+ details[open]{padding-bottom:.9rem}
+ summary{
+   cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:.5rem;
+   font-family:ui-sans-serif,-apple-system,sans-serif;font-size:.86rem
+ }
+ summary::-webkit-details-marker{display:none}
+ summary::before{content:"+";color:var(--muted);font-weight:600;width:.8rem}
+ details[open] summary::before{content:"\2013"}
+ .n{
+   margin-left:auto;font-variant-numeric:tabular-nums;font-size:.72rem;
+   color:var(--muted);letter-spacing:.06em
+ }
+ .why{
+   font-size:.85rem;color:var(--muted);margin:.5rem 0 .7rem 1.3rem;
+   padding-left:.7rem;border-left:2px solid var(--rule)
+ }
+ ol.qs{margin:0 0 0 1.3rem;padding-left:1rem}
+ ol.qs li{margin:.22rem 0}
+ ol.qs button{
+   background:none;border:0;padding:0;text-align:left;font:inherit;font-size:.9rem;
+   color:var(--ref);cursor:pointer;text-decoration:underline;text-underline-offset:2px
+ }
+ ol.qs button:hover{color:#12365a;background:none}
+ .clause{font-size:.72rem;color:var(--muted);font-family:ui-sans-serif,sans-serif}
 </style></head><body>
 <main class="sheet">
  <p class="eyebrow">Reserve Bank of India &middot; Master Direction on KYC, 2025</p>
@@ -135,21 +205,43 @@ PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
    <span class="hint">&#8984;&#8629; to submit</span>
  </div>
 
- <div class="examples">
-   <p class="hint">Try:</p>
-   <button class="ex" onclick="fill(this.textContent)">What are the three monetary limits on Aadhaar OTP e-KYC accounts?</button>
-   <button class="ex" onclick="fill(this.textContent)">Can I open a bank account over a video call?</button>
-   <button class="ex" onclick="fill(this.textContent)">What are the tax benefits under Section 80C?</button>
- </div>
-
  <div id="out"></div>
+
+ <section class="evalhead">
+   <p class="eyebrow">The evaluation set &middot; <span id="qtotal">50</span> questions, every answer verified against the PDF by hand</p>
+   <p class="lede" style="font-size:.88rem">These are the questions the system is scored on \u2014 grouped by the failure
+   mode each one is designed to probe. Click any question to run it.</p>
+   <div id="groups"></div>
+ </section>
 
  <footer>Retrieval: hybrid dense&#8202;+&#8202;BM25 with cross-encoder re-ranking &middot;
  recall@5&nbsp;0.93 on a 50-question hand-verified set &middot; citations verified against
  retrieved context.</footer>
 </main>
 <script>
- function fill(t){const q=document.getElementById('q');q.value=t.trim();q.focus()}
+ function fill(t){
+   const q=document.getElementById('q'); q.value=t.trim();
+   q.scrollIntoView({behavior:'smooth',block:'center'}); q.focus();
+ }
+ const esc=t=>t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ async function loadQuestions(){
+   try{
+     const d=await (await fetch('/questions')).json();
+     document.getElementById('qtotal').textContent=d.total;
+     document.getElementById('groups').innerHTML=d.groups.map(g=>
+       '<details><summary><strong>'+esc(g.title)+'</strong>'+
+       '<span class="n">'+g.count+'</span></summary>'+
+       '<p class="why">'+esc(g.why)+'</p><ol class="qs">'+
+       g.questions.map(q=>'<li><button onclick="fill(this.textContent)">'+
+         esc(q.question)+'</button>'+
+         (q.clause?' <span class="clause">'+esc(q.clause)+'</span>':'')+'</li>').join('')+
+       '</ol></details>').join('');
+   }catch(e){
+     document.getElementById('groups').innerHTML=
+       '<p class="hint">Could not load the eval set: '+esc(String(e))+'</p>';
+   }
+ }
+ loadQuestions();
  async function ask(){
   const q=document.getElementById('q').value.trim(); if(!q)return;
   const btn=document.getElementById('go'), out=document.getElementById('out');

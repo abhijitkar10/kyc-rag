@@ -80,6 +80,7 @@ def main() -> None:
 
     # ---------- retrieval ----------
     r1 = r5 = 0
+    by_cat: dict[str, list[int]] = {}
     ans_best, trick_best = [], []
     retrieved: dict[str, list] = {}
     misses = []
@@ -94,6 +95,10 @@ def main() -> None:
             hit5 = bool(want & set(got))
             r5 += hit5
             ans_best.append(best)
+            cat = row.get("category", "uncategorised")
+            by_cat.setdefault(cat, [0, 0])
+            by_cat[cat][0] += hit5
+            by_cat[cat][1] += 1
             if not hit5:
                 misses.append(row["id"])
         else:
@@ -106,6 +111,12 @@ def main() -> None:
     print(f"separation: answerable best-scores min={min(ans_best):.3f}  "
           f"trick best-scores max={max(trick_best):.3f}  "
           f"({'SEPARATED' if min(ans_best) > max(trick_best) else 'OVERLAP - no clean threshold'})")
+
+    if by_cat:
+        print("\nrecall@5 by question type (what each category probes):")
+        for cat, (hit, tot) in sorted(by_cat.items(), key=lambda kv: -kv[1][1]):
+            bar = "#" * round(10 * hit / tot)
+            print(f"  {cat:<11} {hit:>2}/{tot:<2} = {hit/tot:.2f}  {bar}")
 
     md_row = (f"| {args.tag} | recall@1 {r1/n:.2f} | recall@5 {r5/n:.2f} | "
               f"sep {min(ans_best):.2f}/{max(trick_best):.2f} |")

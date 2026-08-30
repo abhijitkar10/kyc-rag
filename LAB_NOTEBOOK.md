@@ -165,3 +165,22 @@ of the OLD default. Now state both configs explicitly.
 Lesson: defaults are a claim. If the shipped default doesn't reproduce the number on your
 README, the demo quietly contradicts the resume — and an interviewer running one command would
 have caught it.
+
+## 2026-08-26 — Eval set made self-describing; per-category recall
+Changed: added a `category` column to questions.csv (direct 13 / paraphrase 12 / numeric 12 /
+entity 4 / amendment 3 / trick 6 = 50), added `GET /questions` serving the set grouped by
+category with a note on what each category probes, replaced the 3 hardcoded UI examples with a
+browsable list of all 50, and taught run_eval.py to report recall@5 per category.
+Expected: paraphrases hardest (predicted back in Phase 0, before any eval data existed).
+Result — **recall@5 by category (rerank):**
+  numeric    12/12 = 1.00
+  entity      4/4  = 1.00
+  amendment   3/3  = 1.00
+  direct     12/13 = 0.92
+  paraphrase 10/12 = 0.83   <-- the weak spot, exactly as predicted
+Interpretation: the remaining headroom is entirely in *semantic* matching, not in exact-term or
+numeric lookup. Amendment questions — which I expected to stay weak because the answers live in
+small footnote text — are fully recovered by the reranker (they were misses at baseline).
+Lesson: aggregate recall (0.93) hides where the system is actually weak. The per-category split
+turns "it's 93%" into "it's perfect on thresholds and entity rules, and its one weakness is
+everyday paraphrasing" — which is both a better answer and a concrete roadmap.

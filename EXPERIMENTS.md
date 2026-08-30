@@ -57,3 +57,20 @@ Free-tier daily quota (~20 calls/day) capped the run at **21/50 clean answers** 
 retrieval never surfaced the right page, so the model refused instead of inventing an answer. Only
 Q16 was a true false refusal (right page retrieved, model still refused — it's the footnote-based
 amendment question). Refusing on a retrieval miss is the desired failure mode in compliance.
+
+## Per-category recall@5 (rerank, 2026-08-26)
+
+The eval set carries a `category` column, so the scorecard reports where the system is weak
+rather than one aggregate. `./run.sh eval` prints this.
+
+| Category | What it probes | recall@5 |
+|---|---|---|
+| numeric | rupee caps, deadlines, percentages | **1.00** (12/12) |
+| entity | company / partnership / trust / sole-prop document lists | **1.00** (4/4) |
+| amendment | which circular changed a clause, and when (footnote text) | **1.00** (3/3) |
+| direct | asked in the document's own vocabulary | 0.92 (12/13) |
+| paraphrase | everyday wording that avoids the document's terms | **0.83** (10/12) |
+
+**All remaining headroom is in semantic matching.** This was predicted in Phase 0 — before any
+eval data existed — and the breakdown confirms it. The amendment questions, expected to stay
+weak because the answers sit in small footnote text, are fully recovered by the re-ranker.
