@@ -140,10 +140,10 @@ lighter, ~37× faster setup at 0.91.
 - Complete the 50-question generation-behaviour eval (blocked only by the free-tier daily quota;
   harness is `--resume`-able).
 - Ingest the individual amendment circulars for true old-vs-new text diffing (RBI's doc server
-  bot-blocks scripted downloads; links recorded in `READING_GUIDE.md`).
+  bot-blocks scripted downloads).
 
-## Honest notes
+## Notes
 
-Built with an AI assistant as a pair-programmer and teacher; the design decisions, document
-reading, eval ground truth, and experiment analysis are the author's. See `BUILD_TIMELINE.md`
-for the full build history and `FRIEND_ONBOARDING.md` for how to verify and own the project.
+Built with AI assistance (pair-programming and review). Every number in this README is
+reproducible with `./run.sh eval`; the full experiment history, including the two changes that
+made things worse, is in `EXPERIMENTS.md` and `LAB_NOTEBOOK.md`.

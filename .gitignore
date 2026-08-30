@@ -4,3 +4,15 @@ __pycache__/
 .DS_Store
 eval/results/*.log
 .demo_logs/
+
+# private prep/coaching notes — kept in the vault, not published
+FRIEND_ONBOARDING.md
+INTERVIEW_PACK.md
+INTERVIEW_5MIN_NOTES.md
+CODEBASE_WALKTHROUGH.md
+DEMO_SCRIPT.md
+READING_GUIDE.md
+BUILD_TIMELINE.md
+eval/QUESTION_GUIDE.md
+eval/QUESTION_WORKSHEET.md
+eval/questions_v2_worksheet.md
