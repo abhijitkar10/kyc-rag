@@ -3,3 +3,4 @@ __pycache__/
 .env
 .DS_Store
 eval/results/*.log
+.demo_logs/
