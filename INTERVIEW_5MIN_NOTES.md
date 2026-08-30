@@ -1,4 +1,4 @@
-# 5-Minute Spoken Notes + Plain-English Glossary
+	# 5-Minute Spoken Notes + Plain-English Glossary
 
 Two parts:
 1. **The script** — what to say, in simple words, for ~5 minutes straight.
@@ -230,7 +230,7 @@ Say only what you can back up. Current status:
 | 5 configs / 2 negative results | ✅ Measured and documented |
 | 431 chunks, 107 pages, 14 circulars | ✅ Factual |
 | 7 unit tests | ✅ Run `./run.sh test` |
-| Retrieval latency < 20 ms | ✅ Measured locally (`eval/perf.py`) |
+| Retrieval latency: 408 ms (rerank default) / 11 ms (hybrid) | ✅ Measured (`eval/perf.py`) — **don't say "<20 ms"**, that was the old default |
 | **Zero hallucinated citations (14/14 grounded)** | ✅ Measured (exp6, 2026-08-26) |
 | **Refused 3/3 out-of-corpus questions** | ✅ Measured — say **3/3**, not 6/6 |
 | Full 50-question generation run | ⚠️ 21/50 done; free-tier daily quota. `./run.sh eval-gen --resume` finishes it. |

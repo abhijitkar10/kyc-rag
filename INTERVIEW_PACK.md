@@ -111,7 +111,7 @@ the answer was generated from another, so "grounded" was measured against the wr
 taught me that an eval must generate and grade through the *same* path.
 
 **Q: What's your cost and latency?**
-Retrieval p95 ≈ 18ms locally. ₹0/query on the free tier; ~₹0.09–0.23/query on paid tiers by
+Retrieval p50 ≈ 408ms on the shipped rerank config (≈11ms on RETRIEVER=hybrid). ₹0/query on the free tier; ~₹0.09–0.23/query on paid tiers by
 token count. The bottleneck is the LLM call (~2–4s), not retrieval.
 
 **Q: What would you do differently / next?**

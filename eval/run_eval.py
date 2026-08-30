@@ -65,7 +65,8 @@ def answer_with_retry(answer_fn, question: str, top_k: int, retriever=None,
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--gen", action="store_true", help="also run generation checks")
-    ap.add_argument("--retriever", default="dense", help="dense | bm25 | hybrid | rerank")
+    ap.add_argument("--retriever", default="rerank",
+                    help="rerank (default, shipped config) | hybrid | dense | bm25")
     ap.add_argument("--top-k", type=int, default=5)
     ap.add_argument("--tag", default="run")
     ap.add_argument("--resume", action="store_true",

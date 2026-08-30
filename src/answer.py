@@ -12,9 +12,10 @@ from retrievers import get_retriever  # noqa: E402
 import llm  # noqa: E402
 import verify  # noqa: E402
 
-# Default to hybrid: 0.91 recall@5, fast, no heavy model. Set RETRIEVER=rerank
-# for the peak config (0.93) at the cost of loading the ~1.1GB BGE reranker.
-_search = get_retriever(os.environ.get("RETRIEVER", "hybrid"))
+# Default to rerank: the best measured config (recall@5 0.93, recall@1 0.77). It loads
+# a ~1.1GB cross-encoder on first use, then caches. Set RETRIEVER=hybrid for a lighter,
+# slightly weaker setup (0.91) with no extra model download.
+_search = get_retriever(os.environ.get("RETRIEVER", "rerank"))
 
 SYSTEM = """You are a compliance assistant for the RBI KYC Master Direction.
 Answer ONLY from the excerpts provided by the user. For every claim, cite the

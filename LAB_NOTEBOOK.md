@@ -145,3 +145,23 @@ Lesson: the end-to-end numbers only make sense next to the retrieval numbers. "4
 looks bad alone; "3 of them are retrieval misses where refusing is the CORRECT behaviour" is the
 real story. Measuring the two halves separately is what makes that decomposition possible.
 Next: `./run.sh eval-gen --resume` on a later day completes Q22-50 (or use a paid key).
+
+## 2026-08-26 — Shipped default switched hybrid → rerank (consistency fix)
+Changed: `RETRIEVER` default in answer.py/ask.py and `--retriever` default in run_eval.py all
+changed from hybrid/dense to **rerank**.
+Why: two inconsistencies surfaced while building the demo script.
+  1. The flagship demo question ("open an account over a video call?") REFUSED on the hybrid
+     default — a known retrieval miss — but answers correctly under rerank (cites p.13).
+  2. Worse: `./run.sh eval` defaulted to `dense` and printed **recall@5 = 0.82**, contradicting
+     the 0.93 quoted in the README/resume. Anyone running the demo saw the wrong number.
+Result: `./run.sh eval` now prints **recall@1 0.77 / recall@5 0.93** — matching the headline
+claims — and the demo question passes with no env var.
+COST measured (`eval/perf.py`): rerank **p50 408ms / p95 448ms** vs hybrid **p50 11ms / p95 28ms**
+— roughly **37× slower for +0.02 recall@5**. Accepted: 0.4s is invisible next to the ~2-3s LLM
+call, and in compliance a wrong answer costs more than latency. `RETRIEVER=hybrid` remains one
+env var away for speed.
+Docs corrected: README, INTERVIEW_PACK, INTERVIEW_5MIN_NOTES all said "p95 ≈ 18ms" — true only
+of the OLD default. Now state both configs explicitly.
+Lesson: defaults are a claim. If the shipped default doesn't reproduce the number on your
+README, the demo quietly contradicts the resume — and an interviewer running one command would
+have caught it.

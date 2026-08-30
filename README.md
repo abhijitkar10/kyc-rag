@@ -97,7 +97,7 @@ that *looked* obviously good and weren't.
 
 ## Numbers
 
-- **Retrieval latency** (local, measured over 50 queries): **p50 ≈ 10 ms, p95 ≈ 18 ms**.
+- **Retrieval latency** (local, 50 queries): **rerank (shipped default) p50 ≈ 408 ms**; **hybrid (`RETRIEVER=hybrid`) p50 ≈ 11 ms**. The cross-encoder buys +0.02 recall@5 for ~37× latency — worth it here (a wrong compliance answer costs more than 0.4 s), and one env var away if you need speed.
 - **Cost/query**: ₹0 on the Gemini free tier. Token-based estimate on paid tiers: ~1.2K input +
   ~300 output tokens ≈ **₹0.09/query on Gemini 2.5 Flash, ₹0.23 on Claude Haiku 4.5**.
 
@@ -130,8 +130,9 @@ python eval/test_verify.py                    # citation-guardrail unit tests
 python src/amendments.py                      # amendment timeline
 ```
 
-Default retriever is `hybrid` (fast, recall@5 0.91, no heavy model). `RETRIEVER=rerank` uses the
-BGE cross-encoder for the peak 0.93 (loads a ~1.1GB model).
+Default retriever is `rerank` — the best measured config (recall@5 **0.93**, recall@1 **0.77**).
+It loads a ~1.1GB BGE cross-encoder on first use, then caches. Set `RETRIEVER=hybrid` for a
+lighter, ~37× faster setup at 0.91.
 
 ## What I'd do next
 

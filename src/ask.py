@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from retrievers import get_retriever  # noqa: E402
 
-search = get_retriever(os.environ.get("RETRIEVER", "hybrid"))
+search = get_retriever(os.environ.get("RETRIEVER", "rerank"))
 
 
 def main() -> None:

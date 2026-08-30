@@ -4,8 +4,8 @@ Tested 2026-08-26. Every command below was verified to work.
 
 ## ⚠️ Before the interview (do this the night before)
 
-1. **Pre-warm the reranker** — the first `RETRIEVER=rerank` run downloads a ~1.1GB model.
-   Never let that happen live. Run it once beforehand (see step 4).
+1. **Pre-warm the reranker** — the shipped default retriever downloads a ~1.1GB model on its
+   FIRST run. Never let that happen live. Run `./run.sh ask "test"` once beforehand.
 2. **Check your LLM quota** — the free Gemini tier allows ~20 calls/day. If you've been
    testing, you may be out. Steps 5–8 need NO key and always work.
 3. **Open two terminal tabs** — one in the repo, one spare for the web server.
@@ -47,17 +47,18 @@ Expect: the 5 retrieved chunks with scores and page numbers, then the answer.
 Say: *"This is how I debug — if the right chunk isn't in this list it's a retrieval problem,
 if it is and the answer's wrong it's a generation problem."*
 
-## Step 4 — The hard question, peak config
+## Step 4 — The V-CIP question
 
 ```bash
-RETRIEVER=rerank ./run.sh ask "Can I open a bank account over a video call?"
+./run.sh ask "Can I open a bank account over a video call?"
 ```
 
-Expect: a cited answer about **V-CIP**.
-⚠️ **The default (hybrid) REFUSES this one** — it's a known retrieval miss. Under `rerank`
-it works. This is a strength if you frame it: *"My default config trades a little recall for
-speed. The reranked config — my best, at 0.93 recall@5 — catches this one. Same code, one
-environment variable."*
+Expect: a cited answer about **V-CIP** (p.13). ✅ Works on the default config.
+Say: *"The document never says 'video call' — it says V-CIP. That's the embedding search
+matching on meaning rather than words."*
+
+*(If you want to show the speed/accuracy trade-off, run the same question with
+`RETRIEVER=hybrid ./run.sh ask "..."` — 37× faster, slightly lower recall.)*
 
 ## Step 5 — The scorecard (NO API KEY NEEDED)
 
