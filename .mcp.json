@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "knowledge-graph": {
+      "type": "stdio",
+      "command": "bash",
+      "args": [
+        "/Users/abhijitkar/Documents/life/kyc-rag/.claude/skills/knowledge-graph/scripts/mcp-server.sh"
+      ],
+      "env": {
+        "KG_PROJECT_DIR": "/Users/abhijitkar/Documents/life/kyc-rag"
+      }
+    }
+  }
+}
